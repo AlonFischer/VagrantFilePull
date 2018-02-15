@@ -91,11 +91,32 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
 int sys_date(void) {
 	struct rtcdate *r;
 	if (argptr(0, (void*) &r, sizeof(&r) < 0)) {
 		return -1; //errored
 	}
 	cmostime(r);
+	return 0;
+}
+
+int sys_alarm(void) {
+	int ticks;
+	void (*handler)();
+
+	//initialize tick
+	if (argint(0, &ticks) < 0) {
+    		return -1;
+	}
+	//initialize handler
+	if (argptr(1, (char**) &handler, 1) < 0) {
+		return -1;
+	}
+	proc->alarm->ticked = 0;
+	proc->alarm->ticks = ticks;
+	proc->alarm->handler = handler;
+	proc->alarm->state = TICKING;	
+	
 	return 0;
 }

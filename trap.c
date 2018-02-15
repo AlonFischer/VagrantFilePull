@@ -48,7 +48,7 @@ trap(struct trapframe *tf)
   }
 
 if(tf->trapno == 14) {
-                cprintf("Page Fault\n");
+                //cprintf("Page Fault\n");
                 char *mem;
                 uint a;
 
@@ -78,6 +78,20 @@ if(tf->trapno == 14) {
       wakeup(&ticks);
       release(&tickslock);
     }
+	if (proc && (tf->cs & 3) == 3 && proc->alarm->state != OFF) {
+		proc->alarm->ticked++;
+		if (proc->alarm->state == TICKING && proc->alarm->ticked == proc->alarm->ticks) {
+			tf->esp -= 4;
+			proc->alarm->ticked = 0;
+			//save user registers -- for part 2
+			*((uint*)tf->esp + 3) = tf->eax;
+			*((uint*)tf->esp + 2) = tf->edx;
+			*((uint*)tf->esp + 1) = tf->ecx;
+			cprintf("\nBefore: eax: %d, ecx: %d, edx: %d\n", tf->eax, tf->ecx, tf->edx);
+			*((uint *)(tf->esp)) = tf->eip;
+			tf->eip = (uint) proc->alarm->handler;
+		}
+	}
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_IDE:
